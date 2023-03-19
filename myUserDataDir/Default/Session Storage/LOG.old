@@ -1,2 +1,3 @@
-2023/03/19-15:28:23.746 2638 Creating DB D:\docker project\nodejs\puppeter\myUserDataDir\Default\Session Storage since it was missing.
-2023/03/19-15:28:23.816 2638 Reusing MANIFEST D:\docker project\nodejs\puppeter\myUserDataDir\Default\Session Storage/MANIFEST-000001
+2023/03/19-21:43:59.351 bd8 Reusing MANIFEST D:\United-Project\Byu\myUserDataDir\Default\Session Storage/MANIFEST-000001
+2023/03/19-21:43:59.353 bd8 Recovering log #3
+2023/03/19-21:43:59.354 bd8 Reusing old log D:\United-Project\Byu\myUserDataDir\Default\Session Storage/000003.log 
