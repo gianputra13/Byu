@@ -1,6 +1,6 @@
 const puppeterService = require("../services/puppeteerService");
 const dateService = require("../services/dateService");
-const { logging } = require("../services/errorServices"); 
+const { logging } = require("../services/errorServices");
 
 const postOrderPulsaByu = async (req, res) => {
   try {
@@ -24,9 +24,14 @@ const postOrderPulsaByu = async (req, res) => {
       currentObj.nomer = currentObj.nomer.replace("62", "0");
     }
     // Get Digipos Code Payment From Puppeteer Service
-    const digiposCodePayment = await puppeterService.orderPulsaByu(currentObj.nomer, currentObj.nominal);
+    const digiposCodePayment = await puppeterService.orderPulsaByu(
+      currentObj.nomer,
+      currentObj.nominal
+    );
     // Response Buffer Text
-    res.send(`STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${currentObj.nomer}`);
+    res.send(
+      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${currentObj.nomer}`
+    );
   } catch (error) {
     console.log(error);
     logging.error(`[${dateService.currentFormatDate()}]`);

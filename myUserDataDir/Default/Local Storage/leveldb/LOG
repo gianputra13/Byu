@@ -1,3 +1,5 @@
-2023/03/19-21:45:03.632 3710 Reusing MANIFEST D:\United-Project\Byu\myUserDataDir\Default\Local Storage\leveldb/MANIFEST-000001
-2023/03/19-21:45:03.633 3710 Recovering log #3
-2023/03/19-21:45:03.633 3710 Reusing old log D:\United-Project\Byu\myUserDataDir\Default\Local Storage\leveldb/000003.log 
+2023/03/20-11:22:11.619 4094 Reusing MANIFEST D:\docker project\nodejs\puppeter\myUserDataDir\Default\Local Storage\leveldb/MANIFEST-000001
+2023/03/20-11:22:11.620 4094 Recovering log #7
+2023/03/20-11:22:11.620 4094 Level-0 table #9: started
+2023/03/20-11:22:11.628 4094 Level-0 table #9: 35900 bytes OK
+2023/03/20-11:22:11.631 4094 Delete type=0 #7
