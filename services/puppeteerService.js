@@ -2,10 +2,10 @@ const puppeteer = require("puppeteer");
 const dateService = require("./dateService");
 const path = require("path");
 
-const orderPulsaByu = async (number, nominal) => {
+const orderPulsaByu = async (number, idpaket) => {
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
-    headless: true,
+    headless: false,
   });
 
   const page = await browser.newPage();
@@ -29,12 +29,6 @@ const orderPulsaByu = async (number, nominal) => {
   await page.waitForSelector(buttonBuySelector);
   await page.click(buttonBuySelector);
 
-  // Click Tab Menu Pulsa
-  console.info(`[${dateService.currentFormatDate()}] Aksi Tab Menu Pulsa`);
-  const buttonMenuPulsa = "button[data-target='#pilih-pulsa']";
-  await page.waitForSelector(buttonMenuPulsa);
-  await page.click(buttonMenuPulsa, { delay: 1000 });
-
   // Cek Keranjang
   console.info(`[${dateService.currentFormatDate()}] Aksi Cek Isi Keranjang`);
   const countValue = await page.evaluate(() => {
@@ -43,7 +37,7 @@ const orderPulsaByu = async (number, nominal) => {
   });
 
   // If Cart Available, Remove Item from cart
-  console.log(countValue);
+  console.info(`[${dateService.currentFormatDate()}] Total Cart ${countValue}`);
   if (countValue >= 1) {
     console.info(
       `[${dateService.currentFormatDate()}] Aksi Masuk IF Total Cart ${countValue}`
@@ -64,33 +58,35 @@ const orderPulsaByu = async (number, nominal) => {
       );
       button.click({ delay: 3000 });
     });
-    // for (let i = 0; i < cartCountText; i++) {
-    //   console.info(
-    //     `[${dateService.currentFormatDate()}] Aksi Hapus Keranjang ${i}`
-    //   );
-    //   await page.waitForSelector(
-    //     ".m-cart-item__list > .m-cart-item__right button"
-    //   );
-    //   await page.click(".m-cart-item__list > .m-cart-item__right button");
-    // }
+    // setTimeout(async () => {
+    //   for (let i = 0; i < cartCountText; i++) {
+    //     console.info(
+    //       `[${dateService.currentFormatDate()}] Aksi Hapus Keranjang ${i}`
+    //     );
+    //     await page.waitForSelector(
+    //       ".m-cart-item__list > .m-cart-item__right button"
+    //     );
+    //     await page.click(".m-cart-item__list > .m-cart-item__right button");
+    //   }
+    // }, 1000);
   }
 
   // Click Nominal Pulsa
   setTimeout(async () => {
     console.info(
-      `[${dateService.currentFormatDate()}] Aksi Menambahkan Pulsa ${nominal}`
+      `[${dateService.currentFormatDate()}] Aksi Menambahkan Paket Data Dengan ID ${idpaket}`
     );
-    const buttonSelectNominal = `#cCrdtIrnwId${nominal}`;
-    await page.waitForSelector(buttonSelectNominal, {
+    const buttonSelectPaketData = `#cPredefinePckgBtnWeb${idpaket}`;
+    await page.waitForSelector(buttonSelectPaketData, {
       waitUntil: "networkidle0",
     });
-    await page.evaluate((buttonSelectNominal) => {
-      const checkbox = document.querySelector(buttonSelectNominal);
+    await page.evaluate((buttonSelectPaketData) => {
+      const checkbox = document.querySelector(buttonSelectPaketData);
       if (checkbox) {
         checkbox.click();
       }
-    }, buttonSelectNominal);
-  }, 1000);
+    }, buttonSelectPaketData);
+  }, 2000);
 
   // Await Digipos Payment Code With SetTimeout
   const resultDigiposPaymentCode = () => {
@@ -176,4 +172,44 @@ const orderPulsaByu = async (number, nominal) => {
   return result;
 };
 
-module.exports = { orderPulsaByu };
+
+const getFullHtmlProductList = async (number) => {
+  const browser = await puppeteer.launch({
+    userDataDir: path.join(__dirname, "../myUserDataDir"),
+  });
+  const page = await browser.newPage();
+  
+  //set userAgent Browser
+  const userAgent =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
+  await page.setUserAgent(userAgent);
+
+  await page.goto("https://www.byu.id/v2/i-renew/input-nomor");
+
+  await page.type("#inputNumber", number);
+
+  // Click Button Buy
+  console.info(`[${dateService.currentFormatDate()}] Aksi Klik Tombol Beli`);
+  const buttonBuySelector = "#inputNumber ~ button";
+  await page.waitForSelector(buttonBuySelector);
+  await page.click(buttonBuySelector);
+
+  // Click Tab Paket Data
+  console.info(`[${dateService.currentFormatDate()}] Aksi Klik Tab Paket Data`);
+  const selectorTabPaketData = "button[data-target='#pilih-paket']";
+  await page.waitForSelector(selectorTabPaketData);
+  await page.click(selectorTabPaketData);
+
+  // Action Waiting element
+  console.info(`[${dateService.currentFormatDate()}] Aksi Tunggu Element Loaded`);
+  const resultHtml = await new Promise((resolve, reject) => {
+    setTimeout(async () => {
+      const resultRes = await page.content();
+      resolve(resultRes)
+    }, 4000)
+  });
+  await browser.close();
+  return resultHtml;
+};
+
+module.exports = { orderPulsaByu, getFullHtmlProductList };

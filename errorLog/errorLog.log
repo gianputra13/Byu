@@ -1,0 +1,5 @@
+[21/3/2023 11:08:49]
+TimeoutError: Waiting for selector `#digipos` failed: Waiting failed: 30000ms exceeded
+    at Timeout.<anonymous> (D:\United-Project\Byu\node_modules\puppeteer-core\lib\cjs\puppeteer\common\WaitTask.js:63:32)
+    at listOnTimeout (node:internal/timers:559:17)
+    at processTimers (node:internal/timers:502:7)
