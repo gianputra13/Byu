@@ -4,7 +4,7 @@ const router = express.Router();
 const apiController = require("../controller/apiController");
 
 router
-  .post("/pulsa", apiController.postOrderPulsaByu)
+  .post("/paket", apiController.postOrderPulsaByu)
   .post("/products", apiController.postProductLists)
   .get("/products", apiController.getProductLists);
 
