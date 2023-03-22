@@ -23,30 +23,41 @@ const createObjectFromBuffer = (buffer) => {
     currentObj.tujuan = currentObj.tujuan.replace("62", "0");
   }
   return currentObj;
-}
+};
 
 const postOrderPulsaByu = async (req, res) => {
   try {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
     // Get Digipos Code Payment From Puppeteer Service
-    console.info(`[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(resultPayload)}`);
+    console.info(
+      `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
+        resultPayload
+      )}`
+    );
     const digiposCodePayment = await puppeterService.orderPulsaByu(
       resultPayload.tujuan,
       resultPayload.idpaket
     );
     // Get Response Pay Using digipostCodePayment
-    console.info(`[${dateService.currentFormatDate()}] Hit Pembayaran Dengan Kode Bayar ${digiposCodePayment}`);
-    const { data: resPay} = await axios.get("http://192.168.1.55:19001/omniChannel", {
-      username: resultPayload.username,
-      pin: resultPayload.pin,
-      payment_code: digiposCodePayment,
-      payment_method: "LINKAJA",
-      idtrx: resultPayload.idtrx,
-    });
+    console.info(
+      `[${dateService.currentFormatDate()}] Hit Pembayaran Dengan Kode Bayar ${digiposCodePayment}`
+    );
+    const { data: resPay } = await axios.get(
+      "http://192.168.1.55:19001/omniChannel",
+      {
+        username: resultPayload.username,
+        pin: resultPayload.pin,
+        payment_code: digiposCodePayment,
+        payment_method: "LINKAJA",
+        trxid: resultPayload.trxid,
+      }
+    );
     // Response Buffer Text
     res.send(
-      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${resultPayload.tujuan}&IDTRX=${resultPayload.idtrx}&PESAN=${JSON.stringify(resPay)}`
+      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+        resultPayload.tujuan
+      }&TRXID=${resultPayload.trxid}&PESAN=${JSON.stringify(resPay)}`
     );
   } catch (error) {
     console.log(error);
@@ -61,7 +72,9 @@ const postProductLists = async (req, res) => {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
     // Get Full Element Html
-    const fullHtml = await puppeterService.getFullHtmlProductList(resultPayload.tujuan);
+    const fullHtml = await puppeterService.getFullHtmlProductList(
+      resultPayload.tujuan
+    );
     const resultListPaketData = cheerioSerive.getListPaketData(fullHtml);
     res.send(resultListPaketData);
   } catch (error) {
@@ -89,7 +102,6 @@ const getProductLists = async (req, res) => {
     res.send(`STATUS=GAGAL&PESAN=${error.message}`);
   }
 };
-
 
 module.exports = {
   postOrderPulsaByu,

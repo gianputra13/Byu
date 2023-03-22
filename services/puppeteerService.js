@@ -5,7 +5,7 @@ const path = require("path");
 const orderPulsaByu = async (number, idpaket) => {
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
-    headless: false,
+    headless: true,
   });
 
   const page = await browser.newPage();
@@ -21,6 +21,7 @@ const orderPulsaByu = async (number, idpaket) => {
   });
 
   //set inputNumber
+  console.info(`[${dateService.currentFormatDate()}] Masuk`);
   await page.type("#inputNumber", number);
 
   // Click Button Buy
@@ -29,11 +30,19 @@ const orderPulsaByu = async (number, idpaket) => {
   await page.waitForSelector(buttonBuySelector);
   await page.click(buttonBuySelector);
 
+  // Click Tab Paket Data
+  console.info(`[${dateService.currentFormatDate()}] Aksi Klik Tab Paket Data`);
+  const selectorTabPaketData = "button[data-target='#pilih-paket']";
+  await page.waitForSelector(selectorTabPaketData);
+  await page.click(selectorTabPaketData, { delay: 1000 });
+
   // Cek Keranjang
   console.info(`[${dateService.currentFormatDate()}] Aksi Cek Isi Keranjang`);
+  const value = ".m-cart__count span";
+  await page.waitForSelector(value);
   const countValue = await page.evaluate(() => {
-    const countElement = document.querySelector(".m-cart__count span");
-    return countElement ? parseInt(countElement.textContent) : 0;
+    const cartCountElement = document.querySelector(".m-cart__icon span");
+    return cartCountElement.innerText;
   });
 
   // If Cart Available, Remove Item from cart
@@ -46,32 +55,22 @@ const orderPulsaByu = async (number, idpaket) => {
     console.info(`[${dateService.currentFormatDate()}] Aksi Klik Keranjang`);
     await page.evaluate(() => {
       const cartList = document.querySelector(".m-cart__card");
-      cartList.click();
+      cartList.click({ delay: 4000 });
     });
 
     // Get All Cart Items And Remove
     const minusButton = ".m-cart-item__right";
     await page.waitForSelector(minusButton);
+    console.info(`[${dateService.currentFormatDate()}] Aksi Hapus Keranjang`);
     await page.evaluate(() => {
       const button = document.querySelector(
-        `button[data-test-id="deleteItemKeranjangPulsa1"]`
+        `button[class="a-btn a-btn__clear a-btn--primary"]`
       );
-      button.click({ delay: 3000 });
+      button.click({ delay: 5000 });
     });
-    // setTimeout(async () => {
-    //   for (let i = 0; i < cartCountText; i++) {
-    //     console.info(
-    //       `[${dateService.currentFormatDate()}] Aksi Hapus Keranjang ${i}`
-    //     );
-    //     await page.waitForSelector(
-    //       ".m-cart-item__list > .m-cart-item__right button"
-    //     );
-    //     await page.click(".m-cart-item__list > .m-cart-item__right button");
-    //   }
-    // }, 1000);
   }
 
-  // Click Nominal Pulsa
+  // Click Paket Data
   setTimeout(async () => {
     console.info(
       `[${dateService.currentFormatDate()}] Aksi Menambahkan Paket Data Dengan ID ${idpaket}`
@@ -83,10 +82,33 @@ const orderPulsaByu = async (number, idpaket) => {
     await page.evaluate((buttonSelectPaketData) => {
       const checkbox = document.querySelector(buttonSelectPaketData);
       if (checkbox) {
-        checkbox.click();
+        checkbox.click({ delay: 3000 });
       }
     }, buttonSelectPaketData);
   }, 2000);
+
+  //Cek Elemen Popup
+  await page
+    .waitForSelector(".m-popup-notif__txt", { timeout: 6000 })
+    .then(async () => {
+      console.info(
+        `[${dateService.currentFormatDate()}] Elemen Popup ditemukan`
+      );
+      await page.waitForSelector("button.a-btn--primary");
+      console.info(
+        `[${dateService.currentFormatDate()}] Tombol Okei! ditemukan`
+      );
+      const buttonOke = "button[class='a-btn a-btn--primary']";
+      await page.waitForSelector(buttonOke);
+      await page.click(buttonOke, { delay: 2000 });
+    })
+    .catch((error) => {
+      if (error.name === "TimeoutError") {
+        console.info(
+          `[${dateService.currentFormatDate()}] Elemen Popup tidak ditemukan setelah 30 detik`
+        );
+      }
+    });
 
   // Await Digipos Payment Code With SetTimeout
   const resultDigiposPaymentCode = () => {
@@ -96,12 +118,6 @@ const orderPulsaByu = async (number, idpaket) => {
     return new Promise((resolve, reject) => {
       setTimeout(async () => {
         try {
-          // console.info(`[${dateService.currentFormatDate()}] Aksi Acc Pop Up Error`);
-          // Button Close When Oops
-          // const buttonClose = "#__next > div > div.o-popup.o-popup--show.o-popup--sm > div > div > div > div.m-popup-notif__actions > button";
-          // await page.waitForSelector(buttonClose);
-          // await page.click(buttonClose);
-
           // Click Next To Payment Method
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Klik Next Ke Payment Method`
@@ -121,7 +137,7 @@ const orderPulsaByu = async (number, idpaket) => {
           );
           const selectPaymentMethod = `#digipos`;
           await page.waitForSelector(selectPaymentMethod);
-          await page.click(selectPaymentMethod, { delay: 500 });
+          await page.click(selectPaymentMethod, { delay: 2000 });
 
           // Click Next After Select Payment Method
           console.info(
@@ -154,7 +170,7 @@ const orderPulsaByu = async (number, idpaket) => {
             element
           );
 
-          await browser.close();
+          // await browser.close();
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Selesai Dengan Kode ${paymentCodeText}`
           );
@@ -172,13 +188,12 @@ const orderPulsaByu = async (number, idpaket) => {
   return result;
 };
 
-
 const getFullHtmlProductList = async (number) => {
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
   });
   const page = await browser.newPage();
-  
+
   //set userAgent Browser
   const userAgent =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
@@ -201,12 +216,14 @@ const getFullHtmlProductList = async (number) => {
   await page.click(selectorTabPaketData);
 
   // Action Waiting element
-  console.info(`[${dateService.currentFormatDate()}] Aksi Tunggu Element Loaded`);
+  console.info(
+    `[${dateService.currentFormatDate()}] Aksi Tunggu Element Loaded`
+  );
   const resultHtml = await new Promise((resolve, reject) => {
     setTimeout(async () => {
       const resultRes = await page.content();
-      resolve(resultRes)
-    }, 4000)
+      resolve(resultRes);
+    }, 4000);
   });
   await browser.close();
   return resultHtml;

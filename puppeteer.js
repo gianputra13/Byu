@@ -1,7 +1,6 @@
 const puppeteer = require("puppeteer");
 
-const OrderPulsaByu = async (nominal, name) => {
-  console.log(`button[data-test-id="deleteItemKeranjang${name}"]`);
+const OrderPulsaByu = async (number, idpaket) => {
   try {
     const browser = await puppeteer.launch({
       userDataDir: "./myUserDataDir",
@@ -9,91 +8,145 @@ const OrderPulsaByu = async (nominal, name) => {
     });
     const page = await browser.newPage();
 
-    await page.goto("https://www.byu.id/v2/i-renew/input-nomor");
+    //set userAgent Browser
+    const userAgent =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
+    await page.setUserAgent(userAgent);
 
-    await page.type("#inputNumber", "085173292091");
+    //Url
+    await page.goto("https://www.byu.id/v2/i-renew/input-nomor", {
+      timeout: 20000,
+    });
+
+    //set inputNumber
+    await page.type("#inputNumber", number);
 
     // Click Button Buy
+    console.info(` Aksi Button Beli`);
     const buttonBuySelector = "#inputNumber ~ button";
     await page.waitForSelector(buttonBuySelector);
     await page.click(buttonBuySelector);
 
-    // Click Tab Menu Pulsa
-    const buttonMenuPulsa = "button[data-target='#pilih-pulsa']";
-    await page.waitForSelector(buttonMenuPulsa);
-    await page.click(buttonMenuPulsa, { delay: 500 });
+    // Click Tab Paket Data
+    console.info(` Aksi Klik Tab Paket Data`);
+    const selectorTabPaketData = "button[data-target='#pilih-paket']";
+    await page.waitForSelector(selectorTabPaketData);
+    await page.click(selectorTabPaketData, { delay: 1000 });
 
     // Cek Keranjang
-    const cartCountElement = await page.$(".m-cart__count span");
-    const cartCountText = await page.evaluate(
-      (cartCountElement) => cartCountElement.textContent,
-      cartCountElement
-    );
-    if (cartCountText >= 1) {
-      // Click element keranjang
-      const cartSelector = ".m-cart__card";
-      await page.waitForSelector(cartSelector);
-      await page.click(cartSelector, { delay: 1000 });
+    console.info(` Aksi Cek Isi Keranjang`);
+    const value = ".m-cart__count span";
+    await page.waitForSelector(value);
+    const countValue = await page.evaluate(() => {
+      const cartCountElement = document.querySelector(".m-cart__icon span");
+      return cartCountElement.innerText;
+    });
 
+    // If Cart Available, Remove Item from cart
+    console.info(` Total Cart ${countValue}`);
+    if (countValue > 0) {
+      console.info(` Aksi Masuk IF Total Cart ${countValue}`);
+      // Click element keranjang
+      console.info(` Aksi Klik Keranjang`);
+      await page.evaluate(() => {
+        const cartList = document.querySelector(".m-cart__card");
+        cartList.click({ delay: 4000 });
+      });
+
+      // Get All Cart Items And Remove
       const minusButton = ".m-cart-item__right";
       await page.waitForSelector(minusButton);
-      await page.evaluate((name) => {
+      console.info(` Aksi Hapus Keranjang`);
+      await page.evaluate(() => {
         const button = document.querySelector(
-          `button[data-test-id="deleteItemKeranjang${name}"]`
+          `button[class="a-btn a-btn__clear a-btn--primary"]`
         );
-        button.click({ delay: 2000 });
+        button.click({ delay: 5000 });
       });
-
-      // Click Nominal Pulsa
-      const buttonSelectNominal = `#cCrdtIrnwId${nominal}`;
-      await page.waitForSelector(buttonSelectNominal, {
-        waitUntil: "networkidle0",
-      });
-      await page.evaluate((buttonSelectNominal) => {
-        const checkbox = document.querySelector(buttonSelectNominal);
-        if (checkbox) {
-          checkbox.click();
-        }
-      }, buttonSelectNominal);
     }
 
+    // Click Paket Data
+    setTimeout(async () => {
+      console.info(` Aksi Menambahkan Paket Data Dengan ID ${idpaket}`);
+      const buttonSelectPaketData = `#cPredefinePckgBtnWeb${idpaket}`;
+      await page.waitForSelector(buttonSelectPaketData, {
+        waitUntil: "networkidle0",
+      });
+      await page.evaluate((buttonSelectPaketData) => {
+        const checkbox = document.querySelector(buttonSelectPaketData);
+        if (checkbox) {
+          checkbox.click({ delay: 3000 });
+        }
+      }, buttonSelectPaketData);
+    }, 2000);
+
+    await page
+      .waitForSelector(".m-popup-notif__txt", { timeout: 6000 })
+      .then(async () => {
+        console.log("Elemen Popup ditemukan");
+        await page.waitForSelector("button.a-btn--primary");
+        console.log("Tombol Okei! ditemukan");
+        const buttonOke = "button[class='a-btn a-btn--primary']";
+        await page.waitForSelector(buttonOke);
+        await page.click(buttonOke, { delay: 2000 });
+      })
+      .catch((error) => {
+        if (error.name === "TimeoutError") {
+          console.log("Timeout: Elemen Popup tidak ditemukan setelah 30 detik");
+        }
+      });
+
     // Click Next To Payment Method
+    console.info(` Aksi Klik Next Ke Payment Method`);
     const buttonSelector = ".m-cart__btn";
     await page.waitForSelector(buttonSelector);
     await page.evaluate(() => {
       const button = document.querySelector(
         'button[data-test-id="btnNextIrenew"]'
       );
-      button.click({ delay: 2000 });
+      button.click({ delay: 1000 });
     });
 
     // Click Payment Method
+    console.info(` Aksi Pilih Digipos`);
     const selectPaymentMethod = `#digipos`;
     await page.waitForSelector(selectPaymentMethod);
-    await page.click(selectPaymentMethod, { delay: 500 });
+    await page.click(selectPaymentMethod, { delay: 1000 });
 
     // Click Next After Select Payment Method
+    console.info(` Aksi Next After Select Payment Method`);
     const buttonNextPayment = `button[data-test-id='NextBtnWeb']`;
     await page.waitForSelector(buttonNextPayment);
     await page.click(buttonNextPayment, { delay: 3000 });
 
     // Get PaymentCode
+    console.info(` Aksi Menunggu Kode Payment`);
     const paymentCodeSelector = ".m-payment-offline__detail--payment-code";
     await page.waitForSelector(paymentCodeSelector);
     const paymentCode = await page.$(paymentCodeSelector);
-    console.log(paymentCode); // Cetak nilai paymentcode
+    // Cetak nilai paymentcode
     const paymentCodeText = await page.evaluate(
       (el) => el.textContent,
       paymentCode
     );
-    console.log(paymentCodeText);
 
-    await browser.close();
+    // Get PaymentValue
+    const element = await page.$(
+      ".o-payment-card__total > .a-txt--dark.a-txt--w-bold"
+    );
+    const totalPrice = await page.evaluate(
+      (element) => element.textContent,
+      element
+    );
+
+    // await browser.close();
+    console.info(` Aksi Selesai Dengan Kode ${paymentCodeText}`);
+    console.info(` Aksi Selesai Dengan Pembayaran ${totalPrice}`);
   } catch (error) {
     console.log(error);
   }
 };
 
 (async () => {
-  await OrderPulsaByu(20000, "Pulsa1");
+  await OrderPulsaByu("085172251181", 10851);
 })();
