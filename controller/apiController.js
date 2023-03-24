@@ -1,7 +1,6 @@
 const puppeterService = require("../services/puppeteerService");
 const cheerioSerive = require("../services/cheerioService");
 const dateService = require("../services/dateService");
-const axios = require("axios");
 const { logging } = require("../services/errorServices");
 
 const createObjectFromBuffer = (buffer) => {
@@ -25,7 +24,7 @@ const createObjectFromBuffer = (buffer) => {
   return currentObj;
 };
 
-const postOrderPulsaByu = async (req, res) => {
+const postOrderPaketByu = async (req, res) => {
   try {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
@@ -39,25 +38,40 @@ const postOrderPulsaByu = async (req, res) => {
       resultPayload.tujuan,
       resultPayload.idpaket
     );
-    // Get Response Pay Using digipostCodePayment
-    console.info(
-      `[${dateService.currentFormatDate()}] Hit Pembayaran Dengan Kode Bayar ${digiposCodePayment}`
-    );
-    const { data: resPay } = await axios.get(
-      "http://192.168.1.55:19001/omniChannel",
-      {
-        username: resultPayload.username,
-        pin: resultPayload.pin,
-        payment_code: digiposCodePayment,
-        payment_method: "LINKAJA",
-        trxid: resultPayload.trxid,
-      }
-    );
+
     // Response Buffer Text
     res.send(
       `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
         resultPayload.tujuan
-      }&TRXID=${resultPayload.trxid}&PESAN=${JSON.stringify(resPay)}`
+      }&TRXID=${resultPayload.trxid}`
+    );
+  } catch (error) {
+    console.log(error);
+    logging.error(`[${dateService.currentFormatDate()}]`);
+    logging.error(error);
+    res.send(`STATUS=GAGAL&PESAN=${error.message}`);
+  }
+};
+
+const getOrderPaketByu = async (req, res) => {
+  try {
+    const payload = req.query;
+    // Get Digipos Code Payment From Puppeteer Service
+    console.info(
+      `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
+        payload
+      )}`
+    );
+    const digiposCodePayment = await puppeterService.orderPulsaByu(
+      payload.tujuan,
+      payload.idpaket
+    );
+
+    // Response Buffer Text
+    res.send(
+      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+        payload.tujuan
+      }&TRXID=${payload.trxid}`
     );
   } catch (error) {
     console.log(error);
@@ -104,7 +118,8 @@ const getProductLists = async (req, res) => {
 };
 
 module.exports = {
-  postOrderPulsaByu,
+  postOrderPaketByu,
+  getOrderPaketByu,
   postProductLists,
   getProductLists,
 };
