@@ -33,7 +33,7 @@ const postOrderPaketByu = async (req, res) => {
       !resultPayload.tujuan ||
       !resultPayload.idpaket ||
       !resultPayload.trxid ||
-      !resultPayload.harga
+      !resultPayload.adm
     ) {
       return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
     }
@@ -43,15 +43,15 @@ const postOrderPaketByu = async (req, res) => {
         resultPayload
       )}`
     );
-    const digiposCodePayment = await puppeterService.orderPulsaByu(
+    const requestPayment = await puppeterService.orderPulsaByu(
       resultPayload.tujuan,
       resultPayload.idpaket
     );
     // Response Buffer Text
     res.send(
-      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+      `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         resultPayload.tujuan
-      }&TRXID=${resultPayload.trxid}&HARGA=${resultPayload.harga}`
+      }&TRXID=${resultPayload.trxid}&TAG=${requestPayment.harga}&ADM=${resultPayload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
     );
   } catch (error) {
     console.log(error);
@@ -69,7 +69,7 @@ const getOrderPaketByu = async (req, res) => {
       !payload.tujuan ||
       !payload.idpaket ||
       !payload.trxid ||
-      !payload.harga
+      !payload.adm
     ) {
       return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
     }
@@ -79,15 +79,15 @@ const getOrderPaketByu = async (req, res) => {
         payload
       )}`
     );
-    const digiposCodePayment = await puppeterService.orderPulsaByu(
+    const requestPayment = await puppeterService.orderPulsaByu(
       payload.tujuan,
       payload.idpaket
     );
     // Response Buffer Text
     res.send(
-      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+      `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         payload.tujuan
-      }&TRXID=${payload.trxid}&HARGA=${payload.harga}`
+      }&TRXID=${payload.trxid}&TAG=${requestPayment.harga}&ADM=${payload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(payload.adm)}`
     );
   } catch (error) {
     console.log(error);
@@ -102,12 +102,13 @@ const postProductLists = async (req, res) => {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
     // Payload Validation
-    if (!resultPayload.tujuan) {
+    if (!resultPayload.tujuan || !resultPayload.adm) {
       res.send("STATUS=GAGAL&PESAN=Pastikan tujuan sudah tercantum diparsing");
     }
     // Get Lists Paket
     const resultListPaketData = await puppeterService.getProductList(
-      resultPayload.tujuan
+      resultPayload.tujuan,
+      resultPayload.adm,
     );
     res.send(resultListPaketData);
   } catch (error) {
@@ -121,12 +122,14 @@ const postProductLists = async (req, res) => {
 const getProductLists = async (req, res) => {
   try {
     const payload = req.query;
-    if (!payload.tujuan) {
-      res.send("STATUS=GAGAL&PESAN=Pastikan tujuan sudah tercantum diparsing");
+    if (!payload.tujuan || !payload.adm) {
+      res.send("STATUS=GAGAL&PESAN=Pastikan tujuan, dan adm sudah tercantum diparsing");
     }
     // Get Lists Paket
+    console.log(payload);
     const resultListPaketData = await puppeterService.getProductList(
-      payload.tujuan
+      payload.tujuan,
+      payload.adm
     );
     res.send(resultListPaketData);
   } catch (error) {
@@ -148,9 +151,10 @@ const postOrderPaketByuWithVerify = async (req, res) => {
       !resultPayload.quota ||
       !resultPayload.harga ||
       !resultPayload.textDescription ||
-      !resultPayload.trxid
+      !resultPayload.trxid ||
+      !resultPayload.adm
     ) {
-      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid sudah tercantum diparsing`);
+      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid, sudah tercantum diparsing`);
     }
 
     // Get Digipos Code Payment From Puppeteer Service
@@ -159,7 +163,7 @@ const postOrderPaketByuWithVerify = async (req, res) => {
         resultPayload
       )}`
     );
-    const digiposCodePayment = await puppeterService.orderPaketWithVerify(
+    const requestPayment = await puppeterService.orderPaketWithVerify(
       resultPayload.tujuan,
       resultPayload.idpaket,
       resultPayload.quota,
@@ -168,10 +172,10 @@ const postOrderPaketByuWithVerify = async (req, res) => {
     );
     // Response Buffer Text
     res.send(
-      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+      `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         resultPayload.tujuan
-      }&TRXID=${resultPayload.trxid}&HARGA=${resultPayload.harga}`
-    );  
+      }&TRXID=${resultPayload.trxid}&TAG=${resultPayload.harga}&ADM=${resultPayload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
+    );
   } catch (error) {
     if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {
       return res.send(`STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`);
@@ -194,7 +198,8 @@ const getOrderPaketByuWithVerify = async (req, res) => {
       !payload.quota ||
       !payload.harga ||
       !payload.textDescription ||
-      !payload.trxid
+      !payload.trxid ||
+      !payload.adm
     ) {
       return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid sudah tercantum diparsing`);
     }
@@ -204,7 +209,7 @@ const getOrderPaketByuWithVerify = async (req, res) => {
         payload
       )}`
     );
-    const digiposCodePayment = await puppeterService.orderPaketWithVerify(
+    const requestPayment = await puppeterService.orderPaketWithVerify(
       payload.tujuan,
       payload.idpaket,
       payload.quota,
@@ -213,9 +218,9 @@ const getOrderPaketByuWithVerify = async (req, res) => {
     );
     // Response Buffer Text
     res.send(
-      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+      `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         payload.tujuan
-      }&TRXID=${payload.trxid}&HARGA=${payload.harga}`
+      }&TRXID=${payload.trxid}&TAG=${payload.harga}&TTAG=${parseInt(requestPayment.harga) + parseInt(payload.adm)}`
     );  
   } catch (error) {
     if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {

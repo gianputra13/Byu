@@ -85,6 +85,7 @@ const orderPulsaByu = async (number, idpaket) => {
     await page.evaluate((buttonSelectPaketData) => {
       const checkbox = document.querySelector(buttonSelectPaketData);
       if (checkbox) {
+        priceText = document.querySelector(buttonSelectPaketData).parentElement.nextElementSibling.nextElementSibling.children[3].textContent;
         checkbox.click({ delay: 3000 });
       }
     }, buttonSelectPaketData);
@@ -172,7 +173,8 @@ const orderPulsaByu = async (number, idpaket) => {
             (element) => element.textContent,
             element
           );
-
+          const [,priceWithDot] = totalPrice.split("Rp");
+          const price = priceWithDot.split(".").join("").trim();
           // await browser.close();
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Selesai Dengan Kode ${paymentCodeText}`
@@ -180,7 +182,10 @@ const orderPulsaByu = async (number, idpaket) => {
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Selesai Dengan Pembayaran ${totalPrice}`
           );
-          resolve(paymentCodeText);
+          resolve({
+            code: paymentCodeText,
+            price,
+          });
         } catch (error) {
           reject(error);
         }
@@ -188,10 +193,13 @@ const orderPulsaByu = async (number, idpaket) => {
     });
   };
   const result = await resultDigiposPaymentCode();
-  return result;
+  return {
+    kode: result.code,
+    harga: result.price,
+  };
 };
 
-const getProductList = async (number) => {
+const getProductList = async (number, adm) => {
   fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
@@ -232,9 +240,13 @@ const getProductList = async (number) => {
     }, 4000);
   });
   // Convert Html content to object
-  const resultLists = cheerioService.getListPaketData(resultHtml)
+  const resultLists = cheerioService.getListPaketData(resultHtml);
+  const remapResultLists = resultLists.map((list) => ({
+    ...list,
+    totalHarga: parseInt(list.price) + parseInt(adm),
+  }))
   await browser.close();
-  return resultLists;
+  return remapResultLists;
 };
 
 const orderPaketWithVerify = async (number, idpaket, quota, price, textDescription) => {
@@ -451,7 +463,8 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
             (element) => element.textContent,
             element
           );
-
+          const [,priceWithDot] = totalPrice.split("Rp");
+          const price = priceWithDot.split(".").join("").trim();
           // await browser.close();
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Selesai Dengan Kode ${paymentCodeText}`
@@ -459,7 +472,10 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Selesai Dengan Pembayaran ${totalPrice}`
           );
-          resolve(paymentCodeText);
+          resolve({
+            code: paymentCodeText,
+            price,
+          });
         } catch (error) {
           reject(error);
         }
@@ -467,10 +483,12 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
     });
   };
   const result = await resultDigiposPaymentCode();
-  return result;
+  return {
+    kode: result.code,
+    harga: result.price
+  };
 };
 
-// orderPaketWithVerify("085173292091", "50502", "1 GB", "5099");
 
 module.exports = {
   orderPulsaByu,
