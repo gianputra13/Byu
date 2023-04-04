@@ -28,6 +28,14 @@ const postOrderPaketByu = async (req, res) => {
   try {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
+    // Payload Validation
+    if (
+      !resultPayload.tujuan ||
+      !resultPayload.idpaket ||
+      !resultPayload.trxid
+    ) {
+      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
+    }
     // Get Digipos Code Payment From Puppeteer Service
     console.info(
       `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
@@ -38,7 +46,6 @@ const postOrderPaketByu = async (req, res) => {
       resultPayload.tujuan,
       resultPayload.idpaket
     );
-
     // Response Buffer Text
     res.send(
       `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
@@ -56,6 +63,14 @@ const postOrderPaketByu = async (req, res) => {
 const getOrderPaketByu = async (req, res) => {
   try {
     const payload = req.query;
+    // Payload Validation
+    if (
+      !payload.tujuan ||
+      !payload.idpaket ||
+      !payload.trxid
+    ) {
+      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
+    }
     // Get Digipos Code Payment From Puppeteer Service
     console.info(
       `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
@@ -66,7 +81,6 @@ const getOrderPaketByu = async (req, res) => {
       payload.tujuan,
       payload.idpaket
     );
-
     // Response Buffer Text
     res.send(
       `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
@@ -85,11 +99,15 @@ const postProductLists = async (req, res) => {
   try {
     // Incoming request from text buffer and generate object
     const resultPayload = createObjectFromBuffer(req.body);
+    // Payload Validation
+    if (!resultPayload.tujuan) {
+      res.send("STATUS=GAGAL&PESAN=Pastikan tujuan sudah tercantum diparsing");
+    }
     // Get Full Element Html
-    const fullHtml = await puppeterService.getFullHtmlProductList(
+    const resultListPaketData = await puppeterService.getProductList(
       resultPayload.tujuan
     );
-    const resultListPaketData = cheerioSerive.getListPaketData(fullHtml);
+    // const resultListPaketData = cheerioSerive.getListPaketData(fullHtml);
     res.send(resultListPaketData);
   } catch (error) {
     console.log(error);
@@ -103,7 +121,7 @@ const getProductLists = async (req, res) => {
   try {
     const { tujuan } = req.query;
     if (!tujuan) {
-      res.send("STATUS=GAGAL&PESAN=Tujuan Tidak Ditemukan");
+      res.send("STATUS=GAGAL&PESAN=Pastikan tujuan sudah tercantum diparsing");
     }
     // Get Full Element Html
     const fullHtml = await puppeterService.getFullHtmlProductList(tujuan);
@@ -117,9 +135,102 @@ const getProductLists = async (req, res) => {
   }
 };
 
+const postOrderPaketByuWithVerify = async (req, res) => {
+  try {
+    // Incoming request from text buffer and generate object
+    const resultPayload = createObjectFromBuffer(req.body);
+    // Payload Validation
+    if (
+      !resultPayload.tujuan ||
+      !resultPayload.idpaket ||
+      !resultPayload.quota ||
+      !resultPayload.price ||
+      !resultPayload.textDescription ||
+      !resultPayload.trxid
+    ) {
+      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, price, textDescription, trxid sudah tercantum diparsing`);
+    }
+
+    // Get Digipos Code Payment From Puppeteer Service
+    console.info(
+      `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
+        resultPayload
+      )}`
+    );
+    const digiposCodePayment = await puppeterService.orderPaketWithVerify(
+      resultPayload.tujuan,
+      resultPayload.idpaket,
+      resultPayload.quota,
+      resultPayload.price,
+      resultPayload.textDescription,
+    );
+    // Response Buffer Text
+    res.send(
+      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+        resultPayload.tujuan
+      }&TRXID=${resultPayload.trxid}`
+    );  
+  } catch (error) {
+    if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {
+      return res.send(`STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`);
+    }
+    console.log(error);
+    logging.error(`[${dateService.currentFormatDate()}]`);
+    logging.error(error);
+    res.send(`STATUS=GAGAL&PESAN=${error.message}`);
+  }
+};
+
+const getOrderPaketByuWithVerify = async (req, res) => {
+  try {
+    // Incoming request from text buffer and generate object
+    const payload = req.query;
+    // Payload Validation
+    if (
+      !payload.tujuan ||
+      !payload.idpaket ||
+      !payload.quota ||
+      !payload.price ||
+      !payload.textDescription ||
+      !payload.trxid
+    ) {
+      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, price, textDescription, trxid sudah tercantum diparsing`);
+    }
+    // Get Digipos Code Payment From Puppeteer Service
+    console.info(
+      `[${dateService.currentFormatDate()}] Aksi Get Kode Digipos ${JSON.stringify(
+        payload
+      )}`
+    );
+    const digiposCodePayment = await puppeterService.orderPaketWithVerify(
+      payload.tujuan,
+      payload.idpaket,
+      payload.quota,
+      payload.price,
+      payload.textDescription,
+    );
+    // Response Buffer Text
+    res.send(
+      `STATUS=SUKSES&KODEBYR=${digiposCodePayment}&NOMOR=${
+        payload.tujuan
+      }&TRXID=${payload.trxid}`
+    );  
+  } catch (error) {
+    if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {
+      return res.send(`STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`);
+    }
+    console.log(error);
+    logging.error(`[${dateService.currentFormatDate()}]`);
+    logging.error(error);
+    res.send(`STATUS=GAGAL&PESAN=${error.message}`);
+  }
+}
+
 module.exports = {
   postOrderPaketByu,
   getOrderPaketByu,
   postProductLists,
   getProductLists,
+  postOrderPaketByuWithVerify,
+  getOrderPaketByuWithVerify,
 };

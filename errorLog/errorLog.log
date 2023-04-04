@@ -1,0 +1,3 @@
+[4/4/2023 8:45:26]
+TimeoutError: Navigation timeout of 20000 ms exceeded
+    at LifecycleWatcher._LifecycleWatcher_createTimeoutPromise (D:\United-Project\Byu\node_modules\puppeteer-core\lib\cjs\puppeteer\common\LifecycleWatcher.js:174:12)
