@@ -4,8 +4,6 @@ const cheerioService = require("./cheerioService");
 const path = require("path");
 const fs = require("fs");
 
-console.log()
-
 const orderPulsaByu = async (number, idpaket) => {
   fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
   const browser = await puppeteer.launch({
@@ -194,8 +192,10 @@ const orderPulsaByu = async (number, idpaket) => {
 };
 
 const getProductList = async (number) => {
+  fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
+    headless: true,
   });
   const page = await browser.newPage();
 

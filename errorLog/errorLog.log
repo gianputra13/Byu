@@ -1,3 +1,17 @@
-[4/4/2023 8:45:26]
-TimeoutError: Navigation timeout of 20000 ms exceeded
-    at LifecycleWatcher._LifecycleWatcher_createTimeoutPromise (D:\United-Project\Byu\node_modules\puppeteer-core\lib\cjs\puppeteer\common\LifecycleWatcher.js:174:12)
+[4/4/2023 11:17:50]
+TypeError: Cannot read properties of undefined (reading 'includes')
+    at createObjectFromBuffer (D:\United-Project\Byu\controller\apiController.js:20:25)
+    at postProductLists (D:\United-Project\Byu\controller\apiController.js:103:27)
+    at Layer.handle [as handle_request] (D:\United-Project\Byu\node_modules\express\lib\router\layer.js:95:5)
+    at next (D:\United-Project\Byu\node_modules\express\lib\router\route.js:144:13)
+    at Route.dispatch (D:\United-Project\Byu\node_modules\express\lib\router\route.js:114:3)
+    at Layer.handle [as handle_request] (D:\United-Project\Byu\node_modules\express\lib\router\layer.js:95:5)
+    at D:\United-Project\Byu\node_modules\express\lib\router\index.js:284:15
+    at Function.process_params (D:\United-Project\Byu\node_modules\express\lib\router\index.js:346:12)
+    at next (D:\United-Project\Byu\node_modules\express\lib\router\index.js:280:10)
+    at Function.handle (D:\United-Project\Byu\node_modules\express\lib\router\index.js:175:3)
+[4/4/2023 11:25:15]
+TimeoutError: Waiting for selector `button[data-target='#pilih-paket']` failed: Waiting failed: 30000ms exceeded
+    at Timeout.<anonymous> (D:\United-Project\Byu\node_modules\puppeteer-core\lib\cjs\puppeteer\common\WaitTask.js:63:32)
+    at listOnTimeout (node:internal/timers:559:17)
+    at processTimers (node:internal/timers:502:7)
