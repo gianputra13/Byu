@@ -1,182 +1,175 @@
-const puppeteer = require("puppeteer");
-const orderPulsaByu = async (number, idpaket) => {
-  const browser = await puppeteer.launch({
-    // userDataDir: path.join(__dirname, "../myUserDataDir"),
-    headless: true,
-  });
+// puppeteer-extra is a drop-in replacement for puppeteer,
+// it augments the installed puppeteer with plugin functionality
+const puppeteer = require("puppeteer-extra");
+const { Logging } = require("./utils/logging.utils");
 
-  const page = await browser.newPage();
+let PUPPETER_PAGE;
+let identity = null;
 
-  //set userAgent Browser
-  const userAgent =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
-  await page.setUserAgent(userAgent);
+const ID_ONE = "https://www.byu.id/v2/i-renew/input-nomor";
+const ID_TWO = "https://www.byu.id/v2/assets/img/bg/input-number.svg";
+const ID_THREE = "https://www.byu.id/v2/i-renew/payment";
 
-  //Url
-  await page.goto("https://www.byu.id/v2/i-renew/input-nomor", {
-    timeout: 20000,
-  });
+// add stealth plugin and use defaults (all evasion techniques)
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+puppeteer.use(StealthPlugin());
 
-  //set inputNumber
-  await page.type("#inputNumber", number);
-
-  // Click Button Buy
+async function submitNumberAndBuy(number) {
+  const TAG = submitNumberAndBuy.name;
+  Logging.INFO(TAG, "Start action");
+  const inputNumberSelector = "#inputNumber";
+  await PUPPETER_PAGE.waitForNavigation({ waitUntil: "load" });
+  await PUPPETER_PAGE.waitForSelector(inputNumberSelector);
+  await PUPPETER_PAGE.type(inputNumberSelector, number, { delay: 200 });
   const buttonBuySelector = "#inputNumber ~ button";
-  await page.waitForSelector(buttonBuySelector);
-  await page.click(buttonBuySelector);
+  await PUPPETER_PAGE.waitForSelector(buttonBuySelector);
+  await PUPPETER_PAGE.click(buttonBuySelector);
+  Logging.INFO(TAG, "End action");
+}
 
-  // Click Tab Paket Data
-  console.info(`Aksi Klik Tab Paket Data`);
-  const selectorTabPaketData = "button[data-target='#pilih-paket']";
-  await page.waitForSelector(selectorTabPaketData);
-  await page.click(selectorTabPaketData, { delay: 1000 });
+async function changeTabToPulsaPage() {
+  const waitTime = 3000;
+  // setTimeout(async () => {
+  const TAG = changeTabToPulsaPage.name;
+  Logging.INFO(TAG, "Start action");
+  const tabSelector = "button[data-target='#pilih-pulsa']";
+  await PUPPETER_PAGE.waitForSelector(tabSelector);
+  await PUPPETER_PAGE.click(tabSelector);
+  Logging.INFO(TAG, "End action");
+  return true;
+  // }, waitTime);
+}
 
-  // Cek Keranjang
-  console.info(`Aksi Cek Isi Keranjang`);
-  const value = ".m-cart__count span";
-  await page.waitForSelector(value);
-  const countValue = await page.evaluate(() => {
-    const cartCountElement = document.querySelector(".m-cart__icon span");
-    return cartCountElement.innerText;
+async function pickNominalPulsa(nominalId) {
+  const TAG = pickNominalPulsa.name;
+  Logging.INFO(TAG, "Start action");
+  const nominalSelector = `#${nominalId}`;
+  await PUPPETER_PAGE.waitForSelector(nominalSelector);
+  await PUPPETER_PAGE.click(nominalSelector);
+  Logging.INFO(TAG, "End action");
+  return true;
+}
+
+async function clickCheckoutCart() {
+  const waitTime = 500;
+  setTimeout(async () => {
+    const TAG = clickCheckoutCart.name;
+    Logging.INFO(TAG, "Start action");
+    const buttonSelector = "button[class='a-btn a-btn--primary']";
+    await PUPPETER_PAGE.waitForSelector(buttonSelector);
+    await PUPPETER_PAGE.click(buttonSelector);
+    Logging.INFO(TAG, "End action");
+  }, waitTime);
+}
+
+async function pickPaymentMethod(elementId) {
+  const TAG = pickPaymentMethod.name;
+  Logging.INFO(TAG, "Start Action");
+  const paymentMethodSelector = "input#briva";
+  await PUPPETER_PAGE.waitForSelector(paymentMethodSelector);
+  await PUPPETER_PAGE.click(paymentMethodSelector);
+  Logging.INFO(TAG, "End action");
+}
+
+// puppeteer usage as normal
+puppeteer
+  .launch({
+    headless: false,
+    executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  })
+  .then(async (browser) => {
+    PUPPETER_PAGE = await browser.newPage();
+    await PUPPETER_PAGE.setRequestInterception(true);
+
+    // Handle each request
+    PUPPETER_PAGE.on("request", (request) => {
+      request.continue();
+    });
+
+    PUPPETER_PAGE.on("response", async (response) => {
+      const responseUrl = response.url();
+      try {
+        if (
+          responseUrl !== "https://api.byu.id/api/irenew-web/order" &&
+          identity !== "https://www.byu.id/v2/i-renew/payment"
+        )
+          return;
+        const responseBody = await response.json();
+
+        if (responseBody.data.hasOwnProperty("payment_detail")) {
+          if (responseBody.data.payment_detail.length > 0) {
+            console.log("Browser close....");
+            browser.close();
+            console.log("Response Body:", responseBody);
+          }
+        }
+      } catch (error) {
+        // console.error('Error:', error);
+      }
+    });
+
+    // Event listener untuk memantau status loading
+    PUPPETER_PAGE.on("load", async () => {
+      const TAG = "OnPageLoaded";
+      console.log("Halaman telah sepenuhnya dimuat:", PUPPETER_PAGE.url());
+      const currentUrl = PUPPETER_PAGE.url();
+      switch (currentUrl) {
+        case ID_ONE:
+          console.log({ identity });
+          if (identity === ID_ONE) break;
+          identity = ID_ONE;
+          Logging.WARNING(TAG, "ID_ONE");
+          await submitNumberAndBuy("085173292091");
+          break;
+        default:
+          break;
+      }
+    });
+
+    PUPPETER_PAGE.on("domcontentloaded", () => {
+      console.log("DOM sepenuhnya dimuat:", PUPPETER_PAGE.url());
+    });
+
+    // Handle request finished
+    PUPPETER_PAGE.on("requestfinished", async (request) => {
+      const TAG = "RequestFinish";
+      const requestUrl = request.url();
+      // console.log({ requestUrl })
+      switch (requestUrl) {
+        case ID_ONE:
+          // console.log({ identity });
+          // if (identity === ID_ONE) break;
+          // identity = ID_ONE;
+          // Logging.WARNING(TAG, "ID_ONE");
+          // await submitNumberAndBuy("085173292091");
+          break;
+        case ID_TWO:
+          console.log({ identity });
+          if (identity === ID_TWO) break;
+          identity = ID_TWO;
+          Logging.WARNING(TAG, "ID_TWO");
+          const changeFinish = await changeTabToPulsaPage();
+          if (changeFinish) {
+            const pickFinish = await pickNominalPulsa("cCrdtIrnwId10000");
+            if (pickFinish) {
+              await clickCheckoutCart();
+            }
+          }
+          break;
+        case ID_THREE:
+          console.log({ identity });
+          if (identity === ID_THREE) break;
+          identity = ID_THREE;
+          Logging.WARNING(TAG, "ID_THREE");
+          await pickPaymentMethod();
+          await clickCheckoutCart();
+          break;
+      }
+    });
+
+    await PUPPETER_PAGE.goto("https://www.byu.id/v2/i-renew/input-nomor");
+    // await submitNumberAndBuy("085173292091")
+    // await changeTabToPulsaPage()
   });
 
-  // If Cart Available, Remove Item from cart
-  console.info(`Total Cart ${countValue}`);
-  if (countValue >= 1) {
-    console.info(`Aksi Masuk IF Total Cart ${countValue}`);
-    // Click element keranjang
-    console.info(`Aksi Klik Keranjang`);
-    await page.evaluate(() => {
-      const cartList = document.querySelector(".m-cart__card");
-      cartList.click({ delay: 4000 });
-    });
-
-    // Get All Cart Items And Remove
-    const minusButton = ".m-cart-item__right";
-    await page.waitForSelector(minusButton);
-    console.info(`Aksi Hapus Keranjang`);
-    await page.evaluate(() => {
-      const button = document.querySelector(
-        `button[class="a-btn a-btn__clear a-btn--primary"]`
-      );
-      button.click({ delay: 5000 });
-    });
-  }
-  const value1 = ".m-predefined-pkg__item";
-  await page.waitForSelector(value1);
-  const checkboxes = await page.$$('input[type="checkbox"]');
-  let idPaketSama = [];
-  for (let checkbox of checkboxes) {
-    const dataId = await checkbox.evaluate((element) =>
-      element.getAttribute("data-id")
-    );
-    const string = dataId;
-    const elementCode = string.split("Web")[1];
-    if (elementCode === idpaket) {
-      idPaketSama.push(elementCode);
-    }
-  }
-  if (idPaketSama.length === 0) {
-    await browser.close();
-    return console.log("Tidak ada id paket yang sama");
-  } else {
-    console.log("Id paket yang sama: ", idPaketSama[0]);
-  }
-
-  // Click Paket Data
-  setTimeout(async () => {
-    console.info(`Aksi Menambahkan Paket Data Dengan ID ${idPaketSama[0]}`);
-    const buttonSelectPaketData = `#cPredefinePckgBtnWeb${idPaketSama[0]}`;
-    await page.waitForSelector(buttonSelectPaketData, {
-      waitUntil: "networkidle0",
-    });
-    await page.evaluate((buttonSelectPaketData) => {
-      const checkbox = document.querySelector(buttonSelectPaketData);
-      if (checkbox) {
-        checkbox.click({ delay: 3000 });
-      }
-    }, buttonSelectPaketData);
-  }, 2000);
-
-  //Cek Elemen Popup
-  await page
-    .waitForSelector(".m-popup-notif__txt", { timeout: 6000 })
-    .then(async () => {
-      console.info(`Elemen Popup ditemukan`);
-      await page.waitForSelector("button.a-btn--primary");
-      console.info(`Tombol Okei! ditemukan`);
-      const buttonOke = "button[class='a-btn a-btn--primary']";
-      await page.waitForSelector(buttonOke);
-      await page.click(buttonOke, { delay: 2000 });
-    })
-    .catch((error) => {
-      if (error.name === "TimeoutError") {
-        console.info(`Elemen Popup tidak ditemukan setelah 30 detik`);
-      }
-    });
-
-  // Await Digipos Payment Code With SetTimeout
-  const resultDigiposPaymentCode = () => {
-    console.info(`Aksi Fungsi Get Payment Code`);
-    return new Promise((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          // Click Next To Payment Method
-          console.info(`Aksi Klik Next Ke Payment Method`);
-          const buttonSelector = ".m-cart__btn";
-          await page.waitForSelector(buttonSelector);
-          await page.evaluate(() => {
-            const button = document.querySelector(
-              'button[data-test-id="btnNextIrenew"]'
-            );
-            button.click({ delay: 1000 });
-          });
-
-          // Click Payment Method
-          console.info(`Aksi Pilih Digipos`);
-          const selectPaymentMethod = `#digipos`;
-          await page.waitForSelector(selectPaymentMethod);
-          await page.click(selectPaymentMethod, { delay: 2000 });
-
-          // Click Next After Select Payment Method
-          console.info(`Aksi Next After Select Payment Method`);
-          const buttonNextPayment = `button[data-test-id='NextBtnWeb']`;
-          await page.waitForSelector(buttonNextPayment);
-          await page.click(buttonNextPayment, { delay: 3000 });
-
-          // Get PaymentCode
-          console.info(`Aksi Menunggu Kode Payment`);
-          const paymentCodeSelector =
-            ".m-payment-offline__detail--payment-code";
-          await page.waitForSelector(paymentCodeSelector);
-          const paymentCode = await page.$(paymentCodeSelector);
-          // Cetak nilai paymentcode
-          const paymentCodeText = await page.evaluate(
-            (el) => el.textContent,
-            paymentCode
-          );
-
-          // Get PaymentValue
-          const element = await page.$(
-            ".o-payment-card__total > .a-txt--dark.a-txt--w-bold"
-          );
-          const totalPrice = await page.evaluate(
-            (element) => element.textContent,
-            element
-          );
-
-          // await browser.close();
-          console.info(`Aksi Selesai Dengan Kode ${paymentCodeText}`);
-          console.info(`Aksi Selesai Dengan Pembayaran ${totalPrice}`);
-          resolve(paymentCodeText);
-        } catch (error) {
-          reject(error);
-        }
-      }, 5000);
-    });
-  };
-  const result = await resultDigiposPaymentCode();
-  return result;
-};
-
-orderPulsaByu("085173292091", "50502");
+// orderPulsaByu("085173292091", "50502");

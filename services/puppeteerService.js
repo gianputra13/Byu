@@ -1,11 +1,78 @@
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-extra");
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const { Logging } = require("../utils/logging.utils");
 const dateService = require("./dateService");
 const cheerioService = require("./cheerioService");
 const path = require("path");
 const fs = require("fs");
 
-const orderPulsaByu = async (number, idpaket) => {
-  fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
+let PUPPETER_PAGE;
+let identity = null;
+
+async function submitNumberAndBuy(number) {
+  const TAG = submitNumberAndBuy.name;
+  Logging.INFO(TAG, "Start action");
+  const inputNumberSelector = "#inputNumber";
+  await PUPPETER_PAGE.waitForNavigation({ waitUntil: "load" });
+  await PUPPETER_PAGE.waitForSelector(inputNumberSelector);
+  await PUPPETER_PAGE.type(inputNumberSelector, number, { delay: 200 });
+  const buttonBuySelector = "#inputNumber ~ button";
+  await PUPPETER_PAGE.waitForSelector(buttonBuySelector);
+  await PUPPETER_PAGE.click(buttonBuySelector);
+  Logging.INFO(TAG, "End action");
+}
+
+async function changeTabToPulsaPage() {
+  // const waitTime = 3000;
+  // setTimeout(async () => {
+  const TAG = changeTabToPulsaPage.name;
+  Logging.INFO(TAG, "Start action");
+  const tabSelector = "button[data-target='#pilih-pulsa']";
+  await PUPPETER_PAGE.waitForSelector(tabSelector);
+  await PUPPETER_PAGE.click(tabSelector);
+  Logging.INFO(TAG, "End action");
+  return true;
+  // }, waitTime);
+}
+
+async function pickNominalPulsa(nominalId) {
+  const TAG = pickNominalPulsa.name;
+  const waitTime = 3000;
+  await new Promise((resolve) => setTimeout(resolve, waitTime));
+  Logging.INFO(TAG, "Start action");
+  const nominalSelector = `#${nominalId}`;
+  await PUPPETER_PAGE.waitForSelector(nominalSelector);
+  await PUPPETER_PAGE.click(nominalSelector);
+  Logging.INFO(TAG, "End action");
+  return true;
+}
+
+async function clickCheckoutCart() {
+  const waitTime = 500;
+  setTimeout(async () => {
+    const TAG = clickCheckoutCart.name;
+    Logging.INFO(TAG, "Start action");
+    const buttonSelector = "button[class='a-btn a-btn--primary']";
+    await PUPPETER_PAGE.waitForSelector(buttonSelector);
+    await PUPPETER_PAGE.click(buttonSelector);
+    Logging.INFO(TAG, "End action");
+  }, waitTime);
+}
+
+async function pickPaymentMethod(paymentElementId) {
+  const TAG = pickPaymentMethod.name;
+  Logging.INFO(TAG, "Start Action");
+  const paymentMethodSelector = `input#${paymentElementId}`;
+  await PUPPETER_PAGE.waitForSelector(paymentMethodSelector);
+  await PUPPETER_PAGE.click(paymentMethodSelector);
+  Logging.INFO(TAG, "End action");
+}
+
+const orderPaketDataByu = async (number, idpaket) => {
+  fs.rmSync(path.join(__dirname, "../myUserDataDir"), {
+    recursive: true,
+    force: true,
+  });
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
     headless: true,
@@ -85,7 +152,8 @@ const orderPulsaByu = async (number, idpaket) => {
     await page.evaluate((buttonSelectPaketData) => {
       const checkbox = document.querySelector(buttonSelectPaketData);
       if (checkbox) {
-        priceText = document.querySelector(buttonSelectPaketData).parentElement.nextElementSibling.nextElementSibling.children[3].textContent;
+        priceText = document.querySelector(buttonSelectPaketData).parentElement
+          .nextElementSibling.nextElementSibling.children[3].textContent;
         checkbox.click({ delay: 3000 });
       }
     }, buttonSelectPaketData);
@@ -113,7 +181,6 @@ const orderPulsaByu = async (number, idpaket) => {
         );
       }
     });
-
   // Await Digipos Payment Code With SetTimeout
   const resultDigiposPaymentCode = () => {
     console.info(
@@ -134,7 +201,6 @@ const orderPulsaByu = async (number, idpaket) => {
             );
             button.click({ delay: 1000 });
           });
-
           // Click Payment Method
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Pilih Digipos`
@@ -142,7 +208,6 @@ const orderPulsaByu = async (number, idpaket) => {
           const selectPaymentMethod = `#digipos`;
           await page.waitForSelector(selectPaymentMethod);
           await page.click(selectPaymentMethod, { delay: 2000 });
-
           // Click Next After Select Payment Method
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Next After Select Payment Method`
@@ -150,7 +215,6 @@ const orderPulsaByu = async (number, idpaket) => {
           const buttonNextPayment = `button[data-test-id='NextBtnWeb']`;
           await page.waitForSelector(buttonNextPayment);
           await page.click(buttonNextPayment, { delay: 3000 });
-
           // Get PaymentCode
           console.info(
             `[${dateService.currentFormatDate()}] Aksi Menunggu Kode Payment`
@@ -164,7 +228,6 @@ const orderPulsaByu = async (number, idpaket) => {
             (el) => el.textContent,
             paymentCode
           );
-
           // Get PaymentValue
           const element = await page.$(
             ".o-payment-card__total > .a-txt--dark.a-txt--w-bold"
@@ -173,7 +236,7 @@ const orderPulsaByu = async (number, idpaket) => {
             (element) => element.textContent,
             element
           );
-          const [,priceWithDot] = totalPrice.split("Rp");
+          const [, priceWithDot] = totalPrice.split("Rp");
           const price = priceWithDot.split(".").join("").trim();
           // await browser.close();
           console.info(
@@ -200,7 +263,10 @@ const orderPulsaByu = async (number, idpaket) => {
 };
 
 const getProductList = async (number, adm) => {
-  fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
+  fs.rmSync(path.join(__dirname, "../myUserDataDir"), {
+    recursive: true,
+    force: true,
+  });
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
     headless: true,
@@ -244,13 +310,22 @@ const getProductList = async (number, adm) => {
   const remapResultLists = resultLists.map((list) => ({
     ...list,
     totalHarga: parseInt(list.price) + parseInt(adm),
-  }))
+  }));
   await browser.close();
   return remapResultLists;
 };
 
-const orderPaketWithVerify = async (number, idpaket, quota, price, textDescription) => {
-  fs.rmSync(path.join(__dirname, "../myUserDataDir"), { recursive: true, force: true });
+const orderPaketWithVerify = async (
+  number,
+  idpaket,
+  quota,
+  price,
+  textDescription
+) => {
+  fs.rmSync(path.join(__dirname, "../myUserDataDir"), {
+    recursive: true,
+    force: true,
+  });
   const browser = await puppeteer.launch({
     userDataDir: path.join(__dirname, "../myUserDataDir"),
     headless: true,
@@ -288,34 +363,38 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
   await page.click(selectorTabPaketData, { delay: 1000 });
 
   // Aksi Validasi ProductId & Quota & Price
-  console.info(`[${dateService.currentFormatDate()}] Aksi Validasi ProductId & Quota & Price`);
+  console.info(
+    `[${dateService.currentFormatDate()}] Aksi Validasi ProductId & Quota & Price`
+  );
   // First Validation
   const content = await page.content();
   const results = cheerioService.getListPaketData(content);
   let matchDetailPaket;
   matchDetailPaket = results.filter((result) => {
     if (
-      (result.productId === idpaket) &&
-      (result.quota === quota) &&
-      (result.price === price) &&
-      (result.textDescription === textDescription)
+      result.productId === idpaket &&
+      result.quota === quota &&
+      result.price === price &&
+      result.textDescription === textDescription
     ) {
-     return result;
+      return result;
     }
   });
   // Second Validation, if length of result < 1 getFullHtml again and matching
   if (results.length < 1) {
-    console.info(`[${dateService.currentFormatDate()}] Masuk Aksi Validasi Ke 2 ProductId & Quota & Price karena hasil pertama checker ke 1 adalah 0`);
+    console.info(
+      `[${dateService.currentFormatDate()}] Masuk Aksi Validasi Ke 2 ProductId & Quota & Price karena hasil pertama checker ke 1 adalah 0`
+    );
     const secondContent = await page.content();
     const secondResults = cheerioService.getListPaketData(secondContent);
     matchDetailPaket = secondResults.filter((result) => {
       if (
-        (result.productId === idpaket) &&
-        (result.quota === quota) &&
-        (result.price === price) &&
-        (result.textDescription === textDescription)
+        result.productId === idpaket &&
+        result.quota === quota &&
+        result.price === price &&
+        result.textDescription === textDescription
       ) {
-       return result;
+        return result;
       }
     });
   }
@@ -323,7 +402,9 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
   // If Details Packet is not match, close browser and print all packet
   if (matchDetailPaket < 1) {
     console.info(`[${dateService.currentFormatDate()}] Tidak ada data match`);
-    console.info(`[${dateService.currentFormatDate()}] ${JSON.stringify(results)}`);
+    console.info(
+      `[${dateService.currentFormatDate()}] ${JSON.stringify(results)}`
+    );
     browser.close();
     throw new Error("DETAILS_PAKET_NOT_AVAILABLE");
   }
@@ -463,7 +544,7 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
             (element) => element.textContent,
             element
           );
-          const [,priceWithDot] = totalPrice.split("Rp");
+          const [, priceWithDot] = totalPrice.split("Rp");
           const price = priceWithDot.split(".").join("").trim();
           // await browser.close();
           console.info(
@@ -485,13 +566,102 @@ const orderPaketWithVerify = async (number, idpaket, quota, price, textDescripti
   const result = await resultDigiposPaymentCode();
   return {
     kode: result.code,
-    harga: result.price
+    harga: result.price,
   };
 };
 
+const orderPulsaByu = async (phoneNumber, pulsaElementId, paymentElementId) => {
+  puppeteer.use(StealthPlugin());
+  const browser = await puppeteer.launch({
+    headless: false,
+    executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  });
+  PUPPETER_PAGE = await browser.newPage();
+  await PUPPETER_PAGE.setRequestInterception(true);
+  PUPPETER_PAGE.on("request", (request) => {
+    request.continue();
+  });
+  let responseBody = null;
+  const waitForResponseLog = new Promise((resolve) => {
+    PUPPETER_PAGE.on("response", async (response) => {
+      const responseUrl = response.url();
+      try {
+        if (
+          responseUrl !== "https://api.byu.id/api/irenew-web/order" &&
+          responseUrl !== "https://www.byu.id/v2/i-renew/payment"
+        )
+          return;
+        const jsonResponse = await response.json();
+
+        if (jsonResponse.data.hasOwnProperty("payment_detail")) {
+          if (jsonResponse.data.payment_detail.length > 0) {
+            console.log("Response Body:", jsonResponse);
+            responseBody = jsonResponse;
+            resolve(); // Resolve the promise when response is logged
+          }
+        }
+      } catch (error) {
+        // console.error('Error:', error);
+      }
+    });
+  });
+  PUPPETER_PAGE.on("requestfinished", async (request) => {
+    const TAG = "RequestFinish";
+    const requestUrl = request.url();
+    const ID_ONE = "https://www.byu.id/v2/i-renew/input-nomor";
+    const ID_TWO = "https://www.byu.id/v2/assets/img/bg/input-number.svg";
+    const ID_THREE = "https://www.byu.id/v2/i-renew/payment";
+    switch (requestUrl) {
+      case ID_ONE:
+        console.log({ identity });
+        if (identity === ID_ONE) break;
+        identity = ID_ONE;
+        Logging.WARNING(TAG, "ID_ONE");
+        await submitNumberAndBuy(phoneNumber);
+        break;
+      case ID_TWO:
+        console.log({ identity });
+        if (identity === ID_TWO) break;
+        identity = ID_TWO;
+        Logging.WARNING(TAG, "ID_TWO");
+        const changeFinish = await changeTabToPulsaPage();
+        if (changeFinish) {
+          const pickFinish = await pickNominalPulsa(pulsaElementId);
+          if (pickFinish) {
+            await clickCheckoutCart();
+          }
+        }
+        break;
+      case ID_THREE:
+        console.log({ identity });
+        if (identity === ID_THREE) break;
+        identity = ID_THREE;
+        Logging.WARNING(TAG, "ID_THREE");
+        await pickPaymentMethod(paymentElementId);
+        await clickCheckoutCart();
+        break;
+    }
+  });
+  await PUPPETER_PAGE.goto("https://www.byu.id/v2/i-renew/input-nomor");
+  await waitForResponseLog; // Wait for the response to be logged
+  console.log("Browser close....");
+  await browser.close();
+  return responseBody;
+};
+
+// (async () => {
+//   try {
+//     const resultData = await orderPulsaByu("085173292091", "cCrdtIrnwId10000");
+//     console.log(resultData.data.payment_detail[0]);
+//     console.log(resultData.data.order_detail[0]);
+//   } catch (error) {
+//     console.log(error);
+//   }
+// })();
 
 module.exports = {
-  orderPulsaByu,
+  orderPaketDataByu,
   getProductList,
   orderPaketWithVerify,
+  orderPulsaByu,
 };

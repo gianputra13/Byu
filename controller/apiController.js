@@ -2,6 +2,7 @@ const puppeterService = require("../services/puppeteerService");
 const cheerioSerive = require("../services/cheerioService");
 const dateService = require("../services/dateService");
 const { logging } = require("../services/errorServices");
+const { Logging } = require("../utils/logging.utils");
 
 const createObjectFromBuffer = (buffer) => {
   // Convert Buffer To String
@@ -35,7 +36,9 @@ const postOrderPaketByu = async (req, res) => {
       !resultPayload.trxid ||
       !resultPayload.adm
     ) {
-      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
+      return res.send(
+        `STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`
+      );
     }
     // Get Digipos Code Payment From Puppeteer Service
     console.info(
@@ -51,7 +54,9 @@ const postOrderPaketByu = async (req, res) => {
     res.send(
       `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         resultPayload.tujuan
-      }&TRXID=${resultPayload.trxid}&TAG=${requestPayment.harga}&ADM=${resultPayload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
+      }&TRXID=${resultPayload.trxid}&TAG=${requestPayment.harga}&ADM=${
+        resultPayload.adm
+      }&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
     );
   } catch (error) {
     console.log(error);
@@ -65,13 +70,10 @@ const getOrderPaketByu = async (req, res) => {
   try {
     const payload = req.query;
     // Payload Validation
-    if (
-      !payload.tujuan ||
-      !payload.idpaket ||
-      !payload.trxid ||
-      !payload.adm
-    ) {
-      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`);
+    if (!payload.tujuan || !payload.idpaket || !payload.trxid || !payload.adm) {
+      return res.send(
+        `STATUS=GAGAL&PESAN=Pastikan tujuan, idpaket, trxid sudah tercantum diparsing`
+      );
     }
     // Get Digipos Code Payment From Puppeteer Service
     console.info(
@@ -87,7 +89,9 @@ const getOrderPaketByu = async (req, res) => {
     res.send(
       `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         payload.tujuan
-      }&TRXID=${payload.trxid}&TAG=${requestPayment.harga}&ADM=${payload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(payload.adm)}`
+      }&TRXID=${payload.trxid}&TAG=${requestPayment.harga}&ADM=${
+        payload.adm
+      }&TTAG=${parseInt(requestPayment.harga) + parseInt(payload.adm)}`
     );
   } catch (error) {
     console.log(error);
@@ -108,7 +112,7 @@ const postProductLists = async (req, res) => {
     // Get Lists Paket
     const resultListPaketData = await puppeterService.getProductList(
       resultPayload.tujuan,
-      resultPayload.adm,
+      resultPayload.adm
     );
     res.send(resultListPaketData);
   } catch (error) {
@@ -123,7 +127,9 @@ const getProductLists = async (req, res) => {
   try {
     const payload = req.query;
     if (!payload.tujuan || !payload.adm) {
-      res.send("STATUS=GAGAL&PESAN=Pastikan tujuan, dan adm sudah tercantum diparsing");
+      res.send(
+        "STATUS=GAGAL&PESAN=Pastikan tujuan, dan adm sudah tercantum diparsing"
+      );
     }
     // Get Lists Paket
     console.log(payload);
@@ -154,7 +160,9 @@ const postOrderPaketByuWithVerify = async (req, res) => {
       !resultPayload.trxid ||
       !resultPayload.adm
     ) {
-      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid, sudah tercantum diparsing`);
+      return res.send(
+        `STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid, sudah tercantum diparsing`
+      );
     }
 
     // Get Digipos Code Payment From Puppeteer Service
@@ -168,17 +176,21 @@ const postOrderPaketByuWithVerify = async (req, res) => {
       resultPayload.idpaket,
       resultPayload.quota,
       resultPayload.harga,
-      resultPayload.textDescription,
+      resultPayload.textDescription
     );
     // Response Buffer Text
     res.send(
       `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         resultPayload.tujuan
-      }&TRXID=${resultPayload.trxid}&TAG=${resultPayload.harga}&ADM=${resultPayload.adm}&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
+      }&TRXID=${resultPayload.trxid}&TAG=${resultPayload.harga}&ADM=${
+        resultPayload.adm
+      }&TTAG=${parseInt(requestPayment.harga) + parseInt(resultPayload.adm)}`
     );
   } catch (error) {
     if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {
-      return res.send(`STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`);
+      return res.send(
+        `STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`
+      );
     }
     console.log(error);
     logging.error(`[${dateService.currentFormatDate()}]`);
@@ -194,14 +206,15 @@ const getOrderPaketByuWithVerify = async (req, res) => {
     // Payload Validation
     if (
       !payload.tujuan ||
-      !payload.idpaket ||
-      !payload.quota ||
+      !payload.pulsanom ||
       !payload.harga ||
       !payload.textDescription ||
       !payload.trxid ||
       !payload.adm
     ) {
-      return res.send(`STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid sudah tercantum diparsing`);
+      return res.send(
+        `STATUS=GAGAL&PESAN=Pastikan tujuan, idPaket, quota, harga, textDescription, trxid sudah tercantum diparsing`
+      );
     }
     // Get Digipos Code Payment From Puppeteer Service
     console.info(
@@ -214,24 +227,44 @@ const getOrderPaketByuWithVerify = async (req, res) => {
       payload.idpaket,
       payload.quota,
       payload.harga,
-      payload.textDescription,
+      payload.textDescription
     );
     // Response Buffer Text
     res.send(
       `STATUS=SUKSES&KODEBYR=${requestPayment.kode}&NOMOR=${
         payload.tujuan
-      }&TRXID=${payload.trxid}&TAG=${payload.harga}&TTAG=${parseInt(requestPayment.harga) + parseInt(payload.adm)}`
-    );  
+      }&TRXID=${payload.trxid}&TAG=${payload.harga}&TTAG=${
+        parseInt(requestPayment.harga) + parseInt(payload.adm)
+      }`
+    );
   } catch (error) {
     if (error.message === "DETAILS_PAKET_NOT_AVAILABLE") {
-      return res.send(`STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`);
+      return res.send(
+        `STATUS=GAGAL&PESAN=Detail paket yang diminta tidak tersedia`
+      );
     }
     console.log(error);
     logging.error(`[${dateService.currentFormatDate()}]`);
     logging.error(error);
     res.send(`STATUS=GAGAL&PESAN=${error.message}`);
   }
-}
+};
+
+const postOrderPulsaByu = async (req, res) => {
+  try {
+    const TAG = postOrderPulsaByu.name;
+    const resultPayload = createObjectFromBuffer(req.body);
+    Logging.WARNING(TAG, JSON.stringify(resultPayload));
+    await puppeterService.orderPulsaByu(
+      resultPayload.tujuan,
+      resultPayload.nominal,
+      resultPayload.metode
+    );
+    res.send(`STATUS=SUCCESS`);
+  } catch (error) {
+    res.send(`STATUS=GAGAL&PESAN=${error.message}`);
+  }
+};
 
 module.exports = {
   postOrderPaketByu,
@@ -240,4 +273,5 @@ module.exports = {
   getProductLists,
   postOrderPaketByuWithVerify,
   getOrderPaketByuWithVerify,
+  postOrderPulsaByu,
 };
